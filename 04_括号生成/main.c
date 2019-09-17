@@ -18,71 +18,85 @@
  * 分析
  *   A[n]表示n对括号的序列，则n+1对括号的序列
  *   A[n+1]可以为
- *             ()A[n], (A[n]), A[n]()
- *   ()A[n], A[n]()表示同一个序列，当且仅当A[n]没有括号嵌套，即()...()()
- *   对于任意n>0，这样的序列只有1个，用B[n]表示n对括号的所以合法组合数目，有
- *             B[1] = 1;
- *             B[2] = 2;
- *             B[3] = 5;
- *             B[n] = 3 * B[n-1] - 1;
- *             B[n] = (3^(n-1) + 1) / 2;
+ *             (A[i])A[j]   其中i+j = n, i, j是非负数
  */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-//返回B[n], n >= 1
-int fun(int n)
-{
-	int i;
-	int ans = 1;
-	for (i = 0; i < n - 1; i++)
-		ans *= 3;
-	ans = (ans + 1) / 2;
-	return ans;
-}
+#define MAX_BRACKETS_NUM 99
 
 /*
- *   Note: The returned array must be malloced, assume caller calls free().
+ * num[i]表示i对括号能够组成的和法序列数目；
+ * sum[i]表示前i对括号能够组成的合法序列数目的和；
+ * n >= 1
+ * 动态规划思想
+ * dp[n] = sum{dp[i] * dp[j]}, i,j >= 0, i+j = n-1;
+ * dp[0] = dp[1] = 1;
  */
-char *generateParenthesis(int n, int* returnSize)
+void get_series_num(int n, int num[], int sum[])
 {
-	*returnSize = fun(n);
-	char *strs = malloc(*returnSize * (2 * n + 1));
-	if (strs == NULL) {
+	int i, j;
+	num[0] = num[1] = 1;
+	sum[0] = 1;
+	sum[1] = 2;
+	for (i = 2; i <= n; i++) {
+		num[i] = 0;
+		for (j = 0; j < i; j++)
+			num[i] += num[j] * num[i-1-j];
+		sum[i] = sum[i-1] + num[i];
+	}
+}
+
+char *generateParenthesis1(int n, int *returnSize)
+{
+	int num[MAX_BRACKETS_NUM + 1];
+	int start[MAX_BRACKETS_NUM + 2];	//start[i]表示i对括号组成的序列在字符串数组中的起始位置，有start[0] = 0;
+	start[0] = 0;
+	const int len_per_str = 2 * n + 1;
+
+	get_series_num(n, num, start + 1);
+
+	char *buf = malloc(start[n+1] * len_per_str);
+	if (buf == NULL) {
 		printf("alloc memory failed\n");
 		return NULL;
 	}
 
-	int i, j, bn;
-	int str_size = 2 * n + 1;
+	buf[0] = '\0';
+	strcpy(buf + start[1] * len_per_str, "()");
 
-	strcpy(strs, "()");
-	//按照括号对数循环，从1对括号逐步生成n对括号
-	for (i = 1, bn = 1; i < n; i++) {
-		//(A[n])模式生成
-		for (j = 0; j < bn; j++) {
-			strs[(bn + j) * str_size] = '(';
-			strcpy(strs + (bn + j) * str_size + 1, strs + j * str_size);
-			strs[(bn + j) * str_size + i * 2 + 1] = ')';
-			strs[(bn + j) * str_size + i * 2 + 2] = '\0';
+	int i;
+	//i表示括号的对数
+	for (i = 2; i <= n; i++) {
+		int j, str_num = 0;
+		for (j = 0; j < i; j++) {
+			/*
+			 * k和p分别表示对j对括号组成的序列和i-1-j对括号组成的
+			 * 序列的循环的循环次数计数
+			 */
+			int k;
+			for (k = 0; k < num[j]; k++) {
+				int p;
+				for (p = 0; p < num[i-1-j]; p++) {
+					char *base = buf + (start[i] + str_num) * len_per_str;
+					base[0] = '(';
+					strcpy(&base[1], buf + (start[j] + k) * len_per_str);
+					base[1+j*2] = ')';
+					strcpy(&base[2+j*2], buf + (start[i-1-j] + p) * len_per_str);
+					str_num++;
+				}
+			}
 		}
-		//()A[n]模式生成
-		for (j = 0; j < bn - 1; j++) {
-			strs[(bn * 2 + j) * str_size] = '(';
-			strs[(bn * 2 + j) * str_size + 1] = ')';
-			strcpy(strs + (bn * 2 + j) * str_size + 2, strs + (j + 1) * str_size);
-		}
-		//A[n]()模式生成
-		for (j = 0; j < bn; j++)
-			strcpy(strs + j * str_size + i * 2, "()");
-		bn = bn * 3 - 1;
 	}
 
-	return strs;
+	*returnSize = start[n+1];
+	return buf;
 }
 
 /*
+ * 深度优先搜索法
  * 先加左括号，然后增加右括号，右括号等于n则结束
  */
 void dfs(char *strs, int *str_num, char *temp, int left_num, int right_num, int n)
@@ -108,16 +122,15 @@ void dfs(char *strs, int *str_num, char *temp, int left_num, int right_num, int 
  */
 char *generateParenthesis2(int n, int *returnSize)
 {
-	*returnSize = fun(n) + 200;
 	int str_num = 0;
-	char *strs = malloc((*returnSize + 1) * (2 * n + 1));
+	char *strs = malloc(1000 * (2 * n + 1));
+	char temp[MAX_BRACKETS_NUM * 2 + 1] = {0};
 	if (strs == NULL) {
 		printf("malloc memory failed\n");
 		return NULL;
 	}
-	strs[(*returnSize + 1) * (2 * n + 1) - 1] = '\0';
 
-	dfs(strs, &str_num, strs + *returnSize * (2 * n + 1), 0, 0, n);
+	dfs(strs, &str_num, temp, 0, 0, n);
 
 	*returnSize = str_num;
 	return strs;
@@ -125,37 +138,48 @@ char *generateParenthesis2(int n, int *returnSize)
 
 int main()
 {
-	int i, j;
-	int returnSize = 0;
-	char *strs = NULL;
+	int i, j, k;
+	int returnSize1 = 0;
+	int returnSize2 = 0;
+	char *str1 = NULL, *str2 = NULL;
 
-	for (i = 1; i < 9; i++) {
-		strs = generateParenthesis(i, &returnSize);
-		if (strs != NULL) {
+	for (i = 1; i < 8; i++) {
+		str1 = generateParenthesis1(i, &returnSize1);
+		if (str1 != NULL) {
 			printf("strings of %d pairs of braces\n", i);
 			if ( i < 7) {
-				for (j = 0; j < returnSize; j++)
-					printf("%s\n", strs + j * (2 * i + 1));
+				for (j = 0; j < returnSize1; j++)
+					printf("%s\n", str1 + j * (2 * i + 1));
 			}
-			printf("total: %d\n", returnSize);
-			free(strs);
+			printf("total: %d\n", returnSize1);
 		} else {
 			printf("error while n=%d\n", i);
 			break;
 		}
-		strs = generateParenthesis2(i, &returnSize);
-		if (strs != NULL) {
+		str2 = generateParenthesis2(i, &returnSize2);
+		if (str2 != NULL) {
 			printf("strings of %d pairs of braces, use dfs\n", i);
 			if ( i < 7) {
-				for (j = 0; j < returnSize; j++)
-					printf("%s\n", strs + j * (2 * i + 1));
+				for (j = 0; j < returnSize2; j++)
+					printf("%s\n", str2 + j * (2 * i + 1));
 			}
-			printf("total: %d\n", returnSize);
-			free(strs);
+			printf("total: %d\n", returnSize2);
 		} else {
 			printf("error while n=%d\n", i);
 			break;
 		}
+
+		printf("strings that is not in strs1 is\n");
+		for (k = 0; k < returnSize2; k++) {
+			for (j = 0; j < returnSize1; j++)
+				if (strcmp(str2 + k * (2 * i + 1), str1 + j * (2 * i + 1)) == 0)
+					break;
+			if (j == returnSize1)
+				printf("******%s\n", str2 + k * (2 * i + 1));
+		}
+
+		free(str1);
+		free(str2);
 	}
 
 	return 0;
