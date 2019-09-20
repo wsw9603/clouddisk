@@ -25,6 +25,17 @@
  *   如果有 a = 2^n + b 且b和2^n相加时不发生二进制的进位
  *   则 dp[a] = dp[b] + 1
  *   为了保证不发生二进制进位，我们直接假设2^n > b
+ *
+ * 000
+ * 001
+ * 010
+ * 011
+ * 100
+ * 101
+ * 110
+ * 111
+ * 可以观察到：第一位上每两个数出现一次1，第二位上每4个数出现两个1，以此类推，
+ * 可以得到从0到a的所有数的二进制表示中1的个数总和。
  */
 
 #include <stdio.h>
@@ -52,6 +63,22 @@ void fun(unsigned long b)
 		dp[i + (1UL << n)] = 1 + dp[i];
 }
 
+/*
+ * 输出0到a的所有数的二进制表示中1的个数
+ */
+int ones_below_a(unsigned long a)
+{
+	int k, sum = 0;
+	a++;
+	for (k = 0; a > 1 << k; k++) {
+		sum += a / (1 << (k + 1)) * (1 << k);
+		int temp = a % (1 << (k + 1));
+		sum += temp > (1 << k) ? temp - (1 << k) : 0;
+	}
+	printf("a: %lu, sum: %d\n", --a, sum);
+	return sum;
+}
+
 int main()
 {
 	unsigned long a, b, sum, temp, clonea;
@@ -61,6 +88,8 @@ struct timeval start_time, end_time;
 	scanf("%lu %lu", &a, &b);
 	sum = (a + b) * (b - a + 1UL) / 2UL;
 	for (ones_in_sum = 0; sum != 0; sum &= sum - 1UL, ones_in_sum++);
+
+	printf("answer is %d\n", ones_below_a(b) - ones_below_a(a-1) - ones_in_sum);
 
 gettimeofday(&start_time, NULL);
 clonea = a;
