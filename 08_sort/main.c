@@ -36,6 +36,7 @@ void print_array(int array[], int length)
 #define EXIT   0
 #define BUDDLE 1
 #define HEAP   2
+#define MERGE  3
 
 /*
  * 打印菜单并获取用户输入，成功返回0，失败返回-1
@@ -44,9 +45,10 @@ int print_menu(int *menu, int *length, int *max)
 {
 	printf("*************************************************************\n");
 #define MENU(m, str) printf("%d. %s\n", m, #str)
-	MENU(EXIT, exit);
-	MENU(BUDDLE, buddle);
-	MENU(HEAP, heap);
+	MENU(EXIT,	exit);
+	MENU(BUDDLE,	buddle);
+	MENU(HEAP,	heap);
+	MENU(MERGE,	merge);
 #undef MENU
 	printf("please select a menu and set array size and max element value\n");
 
@@ -113,10 +115,15 @@ void fun()
 		print_array(array, length);
 		gettimeofday(&start_time, NULL);
 		switch (menu) {
-			case BUDDLE: buddle_sort(array, length);
-				     break;
-			case HEAP: heap_sort(array, length);
-				   break;
+			case BUDDLE:
+				buddle_sort(array, length);
+				break;
+			case HEAP:
+				heap_sort(array, length);
+				break;
+			case MERGE:
+				merge_sort(array, length);
+				break;
 		}
 		gettimeofday(&end_time, NULL);
 
