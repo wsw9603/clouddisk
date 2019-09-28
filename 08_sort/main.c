@@ -37,6 +37,10 @@ void print_array(int array[], int length)
 #define BUDDLE 1
 #define HEAP   2
 #define MERGE  3
+#define INSERT 4
+#define SELECT 5
+#define SHELL  6
+#define QUICE  7
 
 /*
  * 打印菜单并获取用户输入，成功返回0，失败返回-1
@@ -49,6 +53,10 @@ int print_menu(int *menu, int *length, int *max)
 	MENU(BUDDLE,	buddle);
 	MENU(HEAP,	heap);
 	MENU(MERGE,	merge);
+	MENU(INSERT,	insert);
+	MENU(SELECT,	select);
+	MENU(SHELL,	shell);
+	MENU(QUICE,	quick);
 #undef MENU
 	printf("please select a menu and set array size and max element value\n");
 
@@ -115,15 +123,15 @@ void fun()
 		print_array(array, length);
 		gettimeofday(&start_time, NULL);
 		switch (menu) {
-			case BUDDLE:
-				buddle_sort(array, length);
-				break;
-			case HEAP:
-				heap_sort(array, length);
-				break;
-			case MERGE:
-				merge_sort(array, length);
-				break;
+#define CASE(c, method) case c: method##_sort(array, length); break
+			CASE(BUDDLE,	buddle);
+			CASE(HEAP,	heap);
+			CASE(MERGE,	merge);
+			CASE(INSERT,	insert);
+			CASE(SELECT,	select);
+			CASE(SHELL,	shell);
+			CASE(QUICE,	quick);
+#undef CASE
 		}
 		gettimeofday(&end_time, NULL);
 
