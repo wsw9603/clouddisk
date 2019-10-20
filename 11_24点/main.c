@@ -71,17 +71,29 @@ typedef struct {
 
 void dfs(process_t *pro)
 {
+	int i;
 	if (pro->nr_num == 1) {
 		if (pro->operands[0] < 24.0 + PRECISE &&
-		    pro->operands[0] > 24.0 - PRECISE)
+		    pro->operands[0] > 24.0 - PRECISE &&
+		    pro->result_num < MAX_RESULTS) {
 			pro->result_num++;
+			for (i = 0; i < STEPS_PER_PROCESS; i++) {
+				pro->exps[pro->result_num][i].num1
+					= pro->exps[0][i].num1;
+				pro->exps[pro->result_num][i].num2
+					= pro->exps[0][i].num2;
+				pro->exps[pro->result_num][i].operator
+					= pro->exps[0][i].operator;
+			}
+		}
 		return;
 	}
 
 	pro->nr_num--;
-	int op1, op2, i;
-	expression_t *exp = &pro->exps[pro->result_num]
-				      [STEPS_PER_PROCESS + 1 - pro->nr_num];
+	int op1, op2;
+	char ops[] = {'+', '-', '*', '/', 'a', 'b'};
+
+	expression_t *exp = &pro->exps[0][STEPS_PER_PROCESS - pro->nr_num];
 	for (op1 = 0; op1 < pro->nr_num; op1++) {
 		exp->num1 = pro->operands[op1];
 		for (op2 = op1 + 1; op2 <= pro->nr_num; op2++) {
@@ -89,20 +101,18 @@ void dfs(process_t *pro)
 			//后面的数字向前移动一步
 			for (i = op2; i < pro->nr_num; i++)
 				pro->operands[i] = pro->operands[i + 1];
-			char ops[] = {'+', '-', '*', '/', 'a', 'b'};
 			for (i = 0; i < sizeof(ops); i++) {
 				if (ops[i] == '/' && exp->num2 == 0.0 ||
 				    ops[i] == 'b' && exp->num1 == 0.0)
 					continue;
 				exp->operator = ops[i];
-print_expression(exp);
 				pro->operands[op1] = get_exp_val(exp);
 				dfs(pro);
 			}
 			//恢复之前的数字
 			for (i = pro->nr_num; i > op2; i--)
 				pro->operands[i] = pro->operands[i - 1];
-			pro->operands[op2] = exp->num2;
+			pro->operands[i] = exp->num2;
 		}
 		pro->operands[op1] = exp->num1 ;
 	}
@@ -112,7 +122,19 @@ print_expression(exp);
 
 int main()
 {
+	int i, j;
 	process_t pro = { .nr_num = 4, .operands = {1, 2, 3, 4}, };
+	pro.operands[0] = 3;
+	pro.operands[1] = 4;
+	pro.operands[2] = 8;
+	pro.operands[3] = 3;
 	dfs(&pro);
+	for (i = 1; i <= pro.result_num; i++) {
+		printf("solution %d:\n", i);
+		for (j = 0; j < STEPS_PER_PROCESS; j++)
+			print_expression(&pro.exps[i][j]);
+		putchar('\n');
+	}
+
 	return 0;
 }

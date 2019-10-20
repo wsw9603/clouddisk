@@ -73,7 +73,7 @@ double dfs(process_t *pro)
 
 	pro->nr_num--;
 	int op1, op2, i;
-	expression_t *exp = &pro->exps[STEPS_PER_PROCESS + 1 - pro->nr_num];
+	expression_t *exp = &pro->exps[STEPS_PER_PROCESS - pro->nr_num];
 	for (op1 = 0; op1 < pro->nr_num; op1++) {
 		exp->num1 = pro->operands[op1];
 		for (op2 = op1 + 1; op2 <= pro->nr_num; op2++) {
